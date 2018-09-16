@@ -107,6 +107,7 @@ interpreter={
     var getQueryVariable=interpreter.utilityFunctions.getQueryVariable
     var ethToWei=interpreter.utilityFunctions.ethToWei
     //go through commands for display, then
+    //interpreter.displayCalls('displaycalls right before interpretation')
     for(var f in interpreter.getKeys(dappInterface.elementsById)){
       var command=dappInterface.elementsById[f].display
       if(command){
@@ -116,7 +117,10 @@ interpreter={
           for(var c2 in interpreter.getKeys(interpreter.displayCalls[c])){
             //console.log('applying call',c,c2,f)
             var callstr=c+'('+c2+')'
-            command=command.replace(callstr,interpreter.displayCalls[c][c2]) //fix type issues here
+            //var command2=command.replace(callstr,interpreter.displayCalls[c][c2])
+            var command2 = interpreter.replaceAll(command,callstr,interpreter.displayCalls[c][c2]) //command.replace(callstr,interpreter.displayCalls[c][c2]) //fix type issues here
+          //  console.log('new command is ',command,command2)
+            command=command2
           }
         }
         //console.log('newcommand',command)
@@ -128,13 +132,16 @@ interpreter={
         }
         else{
           //console.log('result not defined')
-          interpreter.setElementText(f,'?')
+          //interpreter.setElementText(f,'?')
         }
     }
 
       //console.log('element',element)
     }
   },
+  'replaceAll':function(target,search, replacement) {
+        return target.split(search).join(replacement);
+    },
   'setElementText':function(elementId,result){
     var element=document.getElementById(elementId)
     if(element.tagName=='INPUT'){
@@ -147,7 +154,18 @@ interpreter={
   'getBoundVariables':function(){
     var boundVariables={}
     boundVariables['userAddress']=web3.eth.accounts[0]
-  //}
+    boundVariables['referralLink']=window.location.origin+"?ref="+web3.eth.accounts[0]
+    refcode=interpreter.utilityFunctions.getQueryVariable('ref')
+    if(!refcode){
+      refcode=interpreter.utilityFunctions.getCookie('ref')
+      if(!refcode){
+        refcode=0
+      }
+    }
+    else{
+      interpreter.utilityFunctions.setCookie('ref',refcode)
+    }
+    boundVariables['referralAddress']=refcode
     var elementswithid=document.querySelectorAll('*[id]')
     for(var i=0;i<elementswithid.length;i++){
       var input=""
@@ -170,7 +188,7 @@ interpreter={
         interpreter.executeCall(interpreter.displayCalls,paramstr,c)
       }
     }
-    //console.log('current calls: ',interpreter.displayCalls)
+    console.log('current calls: ',interpreter.displayCalls)
   },
   //c is the name of the function being called
   'executeCall':function(callsObj,paramstr,c){
@@ -251,7 +269,7 @@ interpreter={
         lastCombo=[s,inside]
         console.log('insideparenscheck ',thatpart,inside)
       }
-      console.log('jiojoeiwjoi',s)
+      //console.log('jiojoeiwjoi',s)
     }
     return lastCombo
   },
@@ -291,7 +309,26 @@ interpreter={
                    if(pair[0] == variable){return pair[1];}
            }
            return(false);
-    }
+    },
+     'setCookie':function(name,value,days) {
+        var expires = "";
+        if (days) {
+            var date = new Date();
+            date.setTime(date.getTime() + (days*24*60*60*1000));
+            expires = "; expires=" + date.toUTCString();
+        }
+        document.cookie = name + "=" + (value || "")  + expires + "; path=/";
+    },
+ 'getCookie':function(name) {
+      var nameEQ = name + "=";
+      var ca = document.cookie.split(';');
+      for(var i=0;i < ca.length;i++) {
+          var c = ca[i];
+          while (c.charAt(0)==' ') c = c.substring(1,c.length);
+          if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
+      }
+      return null;
+  },
   },
   'getInsideParens':function(astr){
     astr=astr.substr(astr.indexOf('(')+1)
@@ -414,14 +451,4 @@ interpreter={
    formatEthValue:function(ethstr){
       return parseFloat(parseFloat(ethstr).toFixed(5));
   },
-   getQueryVariable:function(variable)
-  {
-         var query = window.location.search.substring(1);
-         var vars = query.split("&");
-         for (var i=0;i<vars.length;i++) {
-                 var pair = vars[i].split("=");
-                 if(pair[0] == variable){return pair[1];}
-         }
-         return(false);
-  }
 }
