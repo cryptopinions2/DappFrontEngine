@@ -11,11 +11,11 @@ var dappInterface={
       "display":"'Buy '+Math.floor(ethToWei(napkinsToBuyInput)/NAPKIN_VALUE())+' Napkins'",
       "action":"buyNapkins(ethToWei(napkinsToBuyInput))", //weiToDisplay(ethToWei(napkinsToBuyInput)/NAPKIN_VALUE())
       //"actionPayment":"ethToWei(napkinsToBuyInput)"
-    }
-    // "moveNapkinsButton":{
+    },
+     "moveNapkinsButton":{
     //   "display":"napkinstomove",
-    //   "action":"moveNapkinsTo(napkinstomove,addresstomove)"
-    // }
+       "action":"moveNapkinsTo(napkinsToMoveInput,addressToMoveInput)"
+     }
   },
   "network":"Ropsten",
   "contract":"0xC063dBc5Df0082a32842F27E2b3Ddfa7e538b989",//"0xeecc8FA365D32C2a6d60A77986F1dC0cD0b4172C",

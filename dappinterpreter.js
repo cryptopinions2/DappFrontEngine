@@ -1,3 +1,10 @@
+/**
+Frontend Engine for Ethereum Dapps. Fast, easy smart contract web integration! Configure with interfaceDefinition.js
+
+https://github.com/cryptopinions2/DappFrontEngine
+**/
+
+
 interpreter={
   'main':function(){
     //console.log('test this ',interpreter)
@@ -212,9 +219,14 @@ interpreter={
         var lastCombo = interpreter.defineCallsInCommand(dappInterface.elementsById[f].action,interpreter.actionCalls)
         console.log('setting onclick',f)
         console.log('???',document.getElementById(f))
-        document.getElementById(f).onclick=function(){
-          console.log('clicked button and now executing call',f,lastCombo)
-          interpreter.executeCall(interpreter.actionCalls,lastCombo[1],lastCombo[0])
+        lastCombo.push(f)
+        try{throw lastCombo}//this is to workaround method getting replaced within the function because javascript scoping is horrible
+        catch(lastCombo){
+          f=lastCombo[2]
+          document.getElementById(f).onclick=function(){
+            console.log('clicked button and now executing call',f,lastCombo)
+            interpreter.executeCall(interpreter.actionCalls,lastCombo[1],lastCombo[0])
+          }
         }
       }
     }
