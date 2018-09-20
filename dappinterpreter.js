@@ -4,10 +4,10 @@ Frontend Engine for Ethereum Dapps. Fast, easy smart contract web integration! C
 https://github.com/cryptopinions2/DappFrontEngine
 **/
 
-
 interpreter={
   'main':function(){
     //console.log('test this ',interpreter)
+    interpreter.checkReservedWordsNotPresent()
     interpreter.checkDefinitionForErrors()
     try{
       interpreter.parseAbi()
@@ -85,7 +85,7 @@ interpreter={
     interpreter.checkNetwork()
     interpreter.retrieveCalls()
     //interpreter.applyCalls()//will likely be from a previous retrieve, not the one just called
-    console.log('testing refreshdata')
+    console.log('DappFrontEngine refreshing data')
   },
   'sendTransaction':function(params,method,callback2){
     //console.log('sending transaction ',params,method.name,method,callback2)
@@ -112,6 +112,7 @@ interpreter={
     }
     //go through commands for display, then
     //interpreter.displayCalls('displaycalls right before interpretation')
+    interpreter.checkReservedWordsNotPresent()
     for(var f in interpreter.getKeys(dappInterface.elementsById)){
       var command=dappInterface.elementsById[f].display
       if(command){
@@ -230,6 +231,25 @@ interpreter={
       element.textContent=result
     }
   },
+  'checkReservedWordsNotPresent':function(){
+    var variables=""
+    var reservedWords=interpreter.getReservedWords()
+    //console.log(getGlobalProperties())
+    for(var name in window){
+      //console.log('global variable ',name)
+      if(reservedWords.indexOf(name)>=0){
+        console.log("\n\n************************\n\nWARN: DappFrontEngine reserved word '"+name+"' present in global scope, unexpected behavior may occur\n\n******************")
+      }
+    }
+  },
+  'getReservedWords':function(){
+    var reservedWords = ['initialCommand','command','result','weiToDisplay','weiToEth','ethToWei','getQueryVariable']
+    for(var v in interpreter.getBoundVariables()){
+      //console.log('reserved word ',v)
+      reservedWords.push(v)
+    }
+    return reservedWords
+  },
   'getBoundVariables':function(){
     var boundVariables={}
     boundVariables['userAddress']=web3.eth.accounts[0]
@@ -238,7 +258,7 @@ interpreter={
     if(dappInterface.network.toLowerCase().indexOf('ropsten')!=-1){
       boundVariables['etherscanLink']=boundVariables['etherscanLink'].replace('etherscan.io','ropsten.etherscan.io')
     }
-    refcode=interpreter.utilityFunctions.getQueryVariable('ref')
+    var refcode=interpreter.utilityFunctions.getQueryVariable('ref')
     if(!refcode){
       refcode=interpreter.utilityFunctions.getCookie('ref')
       if(!refcode){
