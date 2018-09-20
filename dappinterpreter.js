@@ -8,7 +8,13 @@ https://github.com/cryptopinions2/DappFrontEngine
 interpreter={
   'main':function(){
     //console.log('test this ',interpreter)
-    interpreter.parseAbi()
+    interpreter.checkDefinitionForErrors()
+    try{
+      interpreter.parseAbi()
+    }
+    catch(err){
+      throw 'ABI parsing failed with: '+err+'\n\n check that ABI in interfaceDefinition.js is correct'
+    }
     interpreter.defineCalls()
     setTimeout(function(){interpreter.retrieveCalls()},300)
     //interpreter.retrieveCalls()
@@ -23,22 +29,27 @@ interpreter={
     interpreter.refreshData()
     setTimeout(function(){interpreter.controlLoop()},2500)
   },
+  'validNetworkNames':['mainnet','main','ropsten'],
   'checkNetwork':function(){
     web3.version.getNetwork((err, netId) => {
         if(dappInterface.network){
+          if(typeof dappInterface.network=='number'){
+            networkshouldbe=dappInterface.network
+            return
+          }
           var nname=dappInterface.network.toLowerCase()
           var networkshouldbe=dappInterface.network
           switch (nname) {
             case "mainnet":
-              console.log('This is mainnet')
+              //console.log('This is mainnet')
               networkshouldbe=1
               break
             case "main":
-              console.log('This is mainnet')
+              //console.log('This is mainnet')
               networkshouldbe=1
               break
             case "ropsten":
-              console.log('This is the ropsten test network.')
+              //console.log('This is the ropsten test network.')
               networkshouldbe=3
               break
             }
@@ -50,6 +61,9 @@ interpreter={
           else{
             //interpreter.enableButtons()
           }
+      }
+      else{
+        networkshouldbe=1
       }
         /*
       switch (netId) {
@@ -74,7 +88,7 @@ interpreter={
     console.log('testing refreshdata')
   },
   'sendTransaction':function(params,method,callback2){
-    console.log('sending transaction ',params,method.name,method,callback2)
+    //console.log('sending transaction ',params,method.name,method,callback2)
     var contractAbi = web3.eth.contract(method.abi);
     var myContract = contractAbi.at(method.contractAddress);
     var tparams={}
@@ -96,36 +110,12 @@ interpreter={
     if(!web3.eth.accounts[0]){
       return
     }
-    var boundVariables=interpreter.getBoundVariables()
-    for(var f in interpreter.getKeys(boundVariables)){
-      if (typeof f == 'undefined'){
-        throw "parameter undefined "+boundvariables;
-      }
-      eval('var '+f+'="'+boundVariables[f]+'"')//set all these variables to the local function variable space
-    }
-    var weiToDisplay=interpreter.utilityFunctions.weiToDisplay
-    var getQueryVariable=interpreter.utilityFunctions.getQueryVariable
-    var ethToWei=interpreter.utilityFunctions.ethToWei
     //go through commands for display, then
     //interpreter.displayCalls('displaycalls right before interpretation')
     for(var f in interpreter.getKeys(dappInterface.elementsById)){
       var command=dappInterface.elementsById[f].display
       if(command){
-        for(var c in interpreter.getKeys(interpreter.displayCalls)){
-          var method=interpreter.solmethods[c]
-          //console.log('applying call0',c)
-          for(var c2 in interpreter.getKeys(interpreter.displayCalls[c])){
-            //console.log('applying call',c,c2,f)
-            var callstr=c+'('+c2+')'
-            //var command2=command.replace(callstr,interpreter.displayCalls[c][c2])
-            var command2 = interpreter.replaceAll(command,callstr,interpreter.displayCalls[c][c2]) //command.replace(callstr,interpreter.displayCalls[c][c2]) //fix type issues here
-          //  console.log('new command is ',command,command2)
-            command=command2
-          }
-        }
-        //console.log('newcommand',command)
-        //console.log('elementid',f)
-        var result=eval(command)
+        var result=interpreter.getCommandResult(command)
         //console.log('setting result: ',command,result)
         if(result!=null){
           interpreter.setElementText(f,result)
@@ -134,10 +124,99 @@ interpreter={
           //console.log('result not defined')
           //interpreter.setElementText(f,'?')
         }
+      }
+      command=dappInterface.elementsById[f].disable
+      //console.log('disablecheck: ',f,command)
+      if(command){
+        //console.log('disablecommand ',command)
+        var result=interpreter.getCommandResult(command)
+        var element=document.getElementById(f)
+        //console.log('disablecheck: ',f,element,command,result,element.disabled)
+        interpreter.setElementDisabled(element,result)
+      }
+      if(dappInterface.elementsById[f].attributes){
+        for(attr in dappInterface.elementsById[f].attributes){
+          //console.log('attribute check: ',attr)
+          command=dappInterface.elementsById[f].attributes[attr]
+          if(command){
+            //console.log('disablecommand ',command)
+            var result=interpreter.getCommandResult(command)
+            var element=document.getElementById(f)
+            //console.log('disablecheck: ',f,element,command,result,element.disabled)
+            if(result!=null){
+              document.getElementById(f)[attr]=result
+            }
+          }
+        }
+      }
     }
+  },
+  'setElementDisabled':function(element,disabled){
+    //console.log('setelementdisabled ',element,disabled)
+    if(element.nodeName=="A"){
+      if(disabled){
+        if(element.style['pointer-events']!='none')
+          element.style['pointer-events']='none'
+      }
+      else{
+        if(element.style['pointer-events']!='')
+          element.style['pointer-events']=''
+      }
+    }
+    if(element.nodeName=="BUTTON"){
+      if(disabled){
+        if(!element.disabled){
+          element.disabled=true;
+        }
+      }
+      else{
+        if(element.disabled){
+          element.disabled=false;
+        }
+      }
+    }
+  },
+  'getCommandResult':function(command){
+    //console.log('getting result of command ',command)
+    var initialCommand=command
+    var weiToDisplay=interpreter.utilityFunctions.weiToDisplay
+    var getQueryVariable=interpreter.utilityFunctions.getQueryVariable
+    var ethToWei=interpreter.utilityFunctions.ethToWei
+    var weiToEth=interpreter.utilityFunctions.weiToEth
 
-      //console.log('element',element)
+    var boundVariables=interpreter.getBoundVariables()
+    for(var f in interpreter.getKeys(boundVariables)){
+      if (typeof f == 'undefined'){
+        throw "parameter undefined "+boundvariables;
+      }
+      if(interpreter.utilityFunctions.isValidFunctionName(f) && boundVariables[f].toString().indexOf('\n')==-1){
+        eval('var '+f+'="'+boundVariables[f]+'"')//set all these variables to the local function variable space
+      }
     }
+    var command
+    for(var c in interpreter.getKeys(interpreter.displayCalls)){
+      var method=interpreter.solmethods[c]
+      //console.log('applying call0',c)
+      for(var c2 in interpreter.getKeys(interpreter.displayCalls[c])){
+        //console.log('applying call',c,c2,f)
+        var callstr=c+'('+c2+')'
+        //var command2=command.replace(callstr,interpreter.displayCalls[c][c2])
+        var command2 = interpreter.replaceAll(command,callstr,interpreter.displayCalls[c][c2]) //command.replace(callstr,interpreter.displayCalls[c][c2]) //fix type issues here
+        //console.log('new command is ',command,command2)
+        command=command2
+      }
+    }
+    //console.log('newcommand',command)
+    //console.log('elementid',f)
+    var result
+    try{
+      result=eval(command)
+    }
+    catch(err){
+      console.log('dappInterpreter.js command \n"'+initialCommand+'""\n failed with exception: ',err)
+    }
+    //console.log('command result ',command,result)
+    return result
   },
   'replaceAll':function(target,search, replacement) {
         return target.split(search).join(replacement);
@@ -155,6 +234,10 @@ interpreter={
     var boundVariables={}
     boundVariables['userAddress']=web3.eth.accounts[0]
     boundVariables['referralLink']=window.location.origin+"?ref="+web3.eth.accounts[0]
+    boundVariables['etherscanLink']='https://etherscan.io/address/'+dappInterface.contract.toLowerCase()
+    if(dappInterface.network.toLowerCase().indexOf('ropsten')!=-1){
+      boundVariables['etherscanLink']=boundVariables['etherscanLink'].replace('etherscan.io','ropsten.etherscan.io')
+    }
     refcode=interpreter.utilityFunctions.getQueryVariable('ref')
     if(!refcode){
       refcode=interpreter.utilityFunctions.getCookie('ref')
@@ -165,6 +248,14 @@ interpreter={
     else{
       interpreter.utilityFunctions.setCookie('ref',refcode)
     }
+    //console.log('refcode variable ',(typeof refcode),refcode)
+    if(refcode){
+      if(refcode.toLowerCase()==web3.eth.accounts[0]){//don't allow self refers from the frontend
+        refcode=0
+      }
+      refcode=refcode.toLowerCase()
+    }
+    else{refcode=0}
     boundVariables['referralAddress']=refcode
     var elementswithid=document.querySelectorAll('*[id]')
     for(var i=0;i<elementswithid.length;i++){
@@ -188,7 +279,7 @@ interpreter={
         interpreter.executeCall(interpreter.displayCalls,paramstr,c)
       }
     }
-    console.log('current calls: ',interpreter.displayCalls)
+    //console.log('current calls: ',interpreter.displayCalls)
   },
   //c is the name of the function being called
   'executeCall':function(callsObj,paramstr,c){
@@ -199,11 +290,15 @@ interpreter={
       if (typeof f == 'undefined'){
         throw "parameter undefined "+boundvariables;
       }
-      eval('var '+f+'="'+boundVariables[f]+'"')//set all these variables to the local function variable space
+      //console.log('executecall boundvar',boundVariables[f],f,interpreter.utilityFunctions.isValidFunctionName(f))
+      if(interpreter.utilityFunctions.isValidFunctionName(f) && boundVariables[f].toString().indexOf('\n')==-1){
+        eval('var '+f+'="'+boundVariables[f]+'"')//set all these variables to the local function variable space
+      }
     }
     var weiToDisplay=interpreter.utilityFunctions.weiToDisplay
     var getQueryVariable=interpreter.utilityFunctions.getQueryVariable
     var ethToWei=interpreter.utilityFunctions.ethToWei
+    var weiToEth=interpreter.utilityFunctions.weiToEth
     var strparams
     if(paramstr.length>0){
       var strparams=paramstr.split(',')
@@ -223,12 +318,16 @@ interpreter={
   },
   'displayCalls':{},
   'actionCalls':{},
+  //'disableCalls':{},
   //'actionCallValues':{},
   //value===null
   'defineCalls':function(){
     //console.log('fwerw???',dappInterface)
     for(var f in interpreter.getKeys(dappInterface.elementsById)){
-      //console.log('ireojoijoi??',f,dappInterface.functions[f])
+      if(!document.getElementById(f)){
+        throw 'Could not find element id '+f
+      }
+      //console.log('ireojoijoi??',f,dappInterface.elementsById[f])
       if('display' in dappInterface.elementsById[f]){
         interpreter.defineCallsInCommand(dappInterface.elementsById[f].display,interpreter.displayCalls)
       }
@@ -245,6 +344,14 @@ interpreter={
             console.log('clicked button and now executing call',f,lastCombo)
             interpreter.executeCall(interpreter.actionCalls,lastCombo[1],lastCombo[0])
           }
+        }
+      }
+      if(dappInterface.elementsById[f].disable){
+        interpreter.defineCallsInCommand(dappInterface.elementsById[f].disable,interpreter.displayCalls)
+      }
+      if(dappInterface.elementsById[f].attributes){
+        for(attr in dappInterface.elementsById[f].attributes){
+          interpreter.defineCallsInCommand(dappInterface.elementsById[f].attributes[attr],interpreter.displayCalls)
         }
       }
     }
@@ -291,11 +398,27 @@ interpreter={
       }
   },
   'utilityFunctions':{
+    'isValidFunctionName' : function(s) {
+      var validName = /^[$A-Z_][0-9A-Z_$]*$/i;
+      var reserved = {
+        'abstract':true,
+        'boolean':true,
+        // ...
+        'with':true
+      };
+      //return function(s) {
+        // Ensure a valid name and not reserved.
+        return validName.test(s) && !reserved[s];
+      //};
+    },
     'weiToDisplay':function(ethprice){
         return interpreter.formatEthValue(web3.fromWei(ethprice,'ether'))
     },
     'ethToWei':function(eth){
       return web3.toWei(eth,'ether')
+    },
+    'weiToEth':function(wei){
+      return web3.fromWei(wei,'ether')
     },
     'formatEthValue':function(ethstr){
         return parseFloat(parseFloat(ethstr).toFixed(5));
@@ -371,23 +494,25 @@ interpreter={
             //console.log('what is interpreter ',interpreter)
             interpreter.solmethods[f['name']]=method
             method.name=f['name']
-            console.log('testing iteration '+f['name'])
+            //console.log('testing iteration '+f['name'])
             if (f['inputs']){
                 method.numparams=f['inputs'].length
             }
             try{throw method}//this is to workaround method getting replaced within the function because javascript scoping is horrible
             catch(method){
               method.callback=function(error,result){
-                if(!error){console.log('method result1 ',method.name,result); method.callback2(result);}else{console.log('transaction failed with ',error.message)}
+                if(!error){//console.log('method result1 ',method.name,result);
+                 method.callback2(result);}else{console.log('transaction failed with ',error.message)}
               }
             }
             if (f['outputs']!=null && f['outputs'].length>0){
-                console.log('outputs: ',f['outputs'])
+                //console.log('outputs: ',f['outputs'])
                 if(f['outputs'][0]['type'].indexOf('uint')!=-1){
                   try{throw method}
                   catch(method){
                     method.callback=function(error,result){
-                      if(!error){console.log('method result2 ',method.name,result); method.callback2(web3.toDecimal(result));}else{console.log('transaction failed with ',error.message)}
+                      if(!error){//console.log('method result2 ',method.name,result);
+                       method.callback2(web3.toDecimal(result));}else{console.log('transaction failed with ',error.message)}
                     }
                   }
                   //console.log('testing callback function ')
@@ -403,7 +528,8 @@ interpreter={
                   try{throw method}
                   catch(method){
                   method.callback=function(error,result){
-                    if(!error){console.log('method result3 ',method.name,result); method.callback2(web3.toAscii(result));}else{console.log('transaction failed with ',error.message)}}
+                    if(!error){//console.log('method result3 ',method.name,result);
+                     method.callback2(web3.toAscii(result));}else{console.log('transaction failed with ',error.message)}}
                   }
                     //callback='web3.toAscii(result)'
                 }
@@ -411,7 +537,8 @@ interpreter={
                   try{throw method}
                   catch(method){
                   method.callback=function(error,result){
-                    if(!error){console.log('method result4 ',method.name,result); method.callback2(result.indexOf('1')!=-1);}else{console.log('transaction failed with ',error.message)}
+                    if(!error){//console.log('method result4 ',method.name,result);
+                     method.callback2(result.indexOf('1')!=-1);}else{console.log('transaction failed with ',error.message)}
                   }
                 }
                     //result.indexOf('1')!=-1
@@ -451,4 +578,23 @@ interpreter={
    formatEthValue:function(ethstr){
       return parseFloat(parseFloat(ethstr).toFixed(5));
   },
+  checkDefinitionForErrors:function(){
+    if((typeof dappInterface)=='undefined' || !dappInterface || (typeof dappInterface)!='object'){
+      throw 'Interface definition not found. Add <script src="interfaceDefinition.js"></script> to head element of index.html, and ensure interfaceDefinition.js exists in your project and is correctly formatted.'
+    }
+    mandatoryElements=['abi','elementsById','contract']
+    for(var i=0;i<mandatoryElements.length;i++){
+      if(!dappInterface[mandatoryElements[i]]){
+        throw 'interfaceDefinition.js must contain valid \"'+mandatoryElements[i]+'\" attribute'
+      }
+    }
+    if(dappInterface.network && (typeof dappInterface.network)=='string'){
+      if(interpreter.validNetworkNames.indexOf(dappInterface.network.toLowerCase())==-1){
+        throw 'network name '+dappInterface.network+' invalid, must be one of ['+interpreter.validNetworkNames+']'
+      }
+    }
+    if((typeof dappInterface.elementsById)!='object'){
+      throw 'elementsById in interfaceDefinition.js must be of type "object"'
+    }
+  }
 }
