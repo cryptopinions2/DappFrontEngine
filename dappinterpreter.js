@@ -4,9 +4,11 @@ Frontend Engine for Ethereum Dapps. Fast, easy smart contract web integration! C
 https://github.com/cryptopinions2/DappFrontEngine
 **/
 
+
 interpreter={
   'main':function(){
     //console.log('test this ',interpreter)
+    interpreter.expandMacros()
     interpreter.checkReservedWordsNotPresent()
     interpreter.checkDefinitionForErrors()
     try{
@@ -88,10 +90,15 @@ interpreter={
     console.log('DappFrontEngine refreshing data')
   },
   'sendTransaction':function(params,method,callback2){
-    //console.log('sending transaction ',params,method.name,method,callback2)
+    //console.log('sending transaction ',params,method.name)
+    //console.log('methodorig: ',method0)
+    //var method=JSON.parse(JSON.stringify(method0))
+    //method.callback=method0.callback
+    //console.log('methodcopy: ',method,method0)
     var contractAbi = web3.eth.contract(method.abi);
     var myContract = contractAbi.at(method.contractAddress);
     var tparams={}
+
     if(method.payable){
       if(method.numparams<params.length){
         tparams.value=params[0]
@@ -101,10 +108,14 @@ interpreter={
         tparams.value=0
       }
     }
+    //console.log('sending transaction with parameters ',method.name,method.transact,params)
     var outputData = myContract[method.name].getData(... params);
-    method.callback2=callback2
+    //method.callback2=callback2
+    //console.log('sendtransaction methodis',method)
     tparams=Object.assign({to:method.contractAddress, from:null, data: outputData},tparams)
-    var endstr=web3.eth[method.transact](tparams,method.callback);
+    //console.log('tparams ',tparams)
+    //console.log('sending transaction with parameters ',tparams)
+    var endstr=web3.eth[method.transact](tparams,callback2)//method.callback2);//method.callback);
   },
   'applyCalls':function(){
     if(!web3.eth.accounts[0]){
@@ -118,6 +129,7 @@ interpreter={
       if(command){
         var result=interpreter.getCommandResult(command)
         //console.log('setting result: ',command,result)
+        //logst('setting result: '+command+"|"+result)
         if(result!=null){
           interpreter.setElementText(f,result)
         }
@@ -199,7 +211,7 @@ interpreter={
       var method=interpreter.solmethods[c]
       //console.log('applying call0',c)
       for(var c2 in interpreter.getKeys(interpreter.displayCalls[c])){
-        //console.log('applying call',c,c2,f)
+        //console.log('applying call',c,c2)
         var callstr=c+'('+c2+')'
         //var command2=command.replace(callstr,interpreter.displayCalls[c][c2])
         var command2 = interpreter.replaceAll(command,callstr,interpreter.displayCalls[c][c2]) //command.replace(callstr,interpreter.displayCalls[c][c2]) //fix type issues here
@@ -215,6 +227,7 @@ interpreter={
     }
     catch(err){
       console.log('dappInterpreter.js command \n"'+initialCommand+'""\n failed with exception: ',err)
+      throw 'couldnt eval command'
     }
     //console.log('command result ',command,result)
     return result
@@ -293,10 +306,16 @@ interpreter={
     if(!web3.eth.accounts[0]){
       return
     }
+    //console.log('displaycalls are ',interpreter.getKeys(interpreter.displayCalls))
     for(var c in interpreter.getKeys(interpreter.displayCalls)){
       for(var c2 in interpreter.getKeys(interpreter.displayCalls[c])){
-        var paramstr=c2
-        interpreter.executeCall(interpreter.displayCalls,paramstr,c)
+        var paramstr=c2;
+
+        //console.log('getting calls ',paramstr,c)
+        //(function(displayCalls,paramstr,c){
+          //console.log('paramstr is??',paramstr,c)
+          interpreter.executeCall(interpreter.displayCalls,paramstr,c)//(displayCalls,paramstr,c)//
+        //})(interpreter.displayCalls,paramstr,c)
       }
     }
     //console.log('current calls: ',interpreter.displayCalls)
@@ -330,10 +349,84 @@ interpreter={
     for(var i=0;i<strparams.length;i++){
       params.push(eval(strparams[i]))
     }
+
+    //interpreter.sendTransactionWithCallback(params,method,c,paramstr,callsObj)
+
+    var timecalled=Date.now()
+    //setTimeout(console.log('amicrazy',timecalled),1000)
+    //console.log('sendTransaction from executecall',params,c,paramstr,callsObj,timecalled)
+    interpreter.sendTransaction(params,method,function(error,result){
+      //console.log('doing callback2 ',result,method)
+      //console.log('recieveTransactionWithCallback',params,c,paramstr,callsObj,timecalled)
+      if(!error){
+        callsObj[c][paramstr]=interpreter.parseResultByType(result,method.resultType)
+      }else{console.log('transaction '+method.name+' failed with ',error.message)}
+
+    })
+
+    // var args0=[]
+    // args0.push(params)
+    // args0.push(method)
+    // args0.push(c)
+    // args0.push(paramstr)
+    // args0.push(callsObj)
+    // //[params,method,c,paramstr,callsObj]
+    // console.log('sending transaction in a bit ',args0)
+    // try{throw args0}
+    // catch(args){
+    //   //console.log('sending transaction for ')
+    //   interpreter.sendTransaction(args[0],args[1],function(result){
+    //     console.log('doing callback2 ',result,args)
+    //     args[4][args[2]][args[3]]=result
+    //     // interpreter.sendTransaction(params,method,function(result){
+    //     //   //console.log('doing callback2 ',result,method)
+    //     //   callsObj[c][paramstr]=result
+    //   })
+    // }
+
     //console.log('paramstr',params,strparams,method)
+    // interpreter.sendTransaction(params,method,function(result){
+    //   //console.log('doing callback2 ',result,method)
+    //   callsObj[c][paramstr]=result
+    //})
+
+    //console.log('paramstr',params,strparams,method)
+    // (function(paramstr){
+    //   console.log('sendTransactionWithCallbackz',params,c,paramstr,callsObj)
+    //   interpreter.sendTransaction(params,method,function(result){
+    //     //console.log('doing callback2 ',result,method)
+    //     console.log('recieveTransactionWithCallback',params,c,paramstr,callsObj)
+    //     callsObj[c][paramstr]=result
+    //   })
+    //   setTimeout(console.log('amicrazy',paramstr),1)
+    // })(paramstr)
+  },
+  'parseResultByType':function(result,type){
+    //console.log('parseresultbytype ',result,type)
+    if(type.indexOf('none')!=-1){
+      return result
+    }
+    if(type.indexOf('uint')!=-1){
+      return web3.toDecimal(result)
+    }
+    if(type.indexOf('bool')!=-1){
+      return result.indexOf('1')!=-1
+    }
+    if(type.indexOf('string')!=-1){
+      web3.toAscii(result)
+    }
+    return result
+  },
+  'sendTransactionWithCallback':function(params,method,c,paramstr,callsObj){
+    //setTimeout(console.log('amicrazy',paramstr),1000)
+    var timecalled=Date.now()
+    console.log('sendTransactionWithCallback',params,c,paramstr,callsObj,timecalled)
     interpreter.sendTransaction(params,method,function(result){
       //console.log('doing callback2 ',result,method)
-      callsObj[c][paramstr]=result
+      setTimeout(function(){//}(callsObj,c,paramstr,result,timecalled){
+        console.log('recieveTransactionWithCallback',params,c,paramstr,callsObj,timecalled)
+        callsObj[c][paramstr]=result
+      },1)//(callsObj,c,paramstr,result,timecalled)
     })
   },
   'displayCalls':{},
@@ -375,8 +468,10 @@ interpreter={
         }
       }
     }
+    //console.log('defined calls ',interpreter.displayCalls)
   },
   'defineCallsInCommand':function(command,calls){
+    //console.log('definecallsincommand ',command,calls)
     var lastCombo=[]
     var solmethodkeys=[]
     for(var k in interpreter.getKeys(interpreter.solmethods)) solmethodkeys.push(k);
@@ -389,15 +484,16 @@ interpreter={
       if(command.indexOf(s+'(')!=-1){
         var thatpart=command.substr(command.indexOf(s+'('))
         var inside=interpreter.getInsideParens(thatpart)
-        if(!(thatpart in calls)){
+        if(!(s in calls)){
           calls[s]={}
         }
         calls[s][inside]=null
         lastCombo=[s,inside]
-        console.log('insideparenscheck ',thatpart,inside)
+        //console.log('insideparenscheck ',thatpart+'|'+s+'|'+inside+'|||',typeof inside,calls[s])
       }
       //console.log('jiojoeiwjoi',s)
     }
+    //console.log('callsattheend ',calls)
     return lastCombo
   },
   'disableButtons':function(){
@@ -476,7 +572,7 @@ interpreter={
   'getInsideParens':function(astr){
     astr=astr.substr(astr.indexOf('(')+1)
     clist=astr.split('')
-    console.log('oierjoeirje',clist)
+    //console.log('oierjoeirje',clist)
     rightcount=0
     for(var i=0;i<clist.length;i++){
       if(clist[i]=='('){
@@ -506,7 +602,7 @@ interpreter={
  'parseAbi':function(){
 
     for(f of dappInterface.abi){
-        console.log('processing part of data:',f)
+        //console.log('processing part of data:',f)
         if(f['name']){
             var method={'numparams':0}
             method.contractAddress=dappInterface.contract
@@ -518,58 +614,61 @@ interpreter={
             if (f['inputs']){
                 method.numparams=f['inputs'].length
             }
-            try{throw method}//this is to workaround method getting replaced within the function because javascript scoping is horrible
-            catch(method){
-              method.callback=function(error,result){
-                if(!error){//console.log('method result1 ',method.name,result);
-                 method.callback2(result);}else{console.log('transaction failed with ',error.message)}
-              }
-            }
+            // try{throw method}//this is to workaround method getting replaced within the function because javascript scoping is horrible
+            // catch(method){
+            //   method.callback=function(error,result){
+            //     if(!error){//console.log('method result1 ',method.name,result);
+            //      method.callback2(result);}else{console.log('transaction failed with ',error.message)}
+            //   }
+            // }
+            method.resultType='none'
             if (f['outputs']!=null && f['outputs'].length>0){
+              method.resultType=f['outputs'][0]['type']
                 //console.log('outputs: ',f['outputs'])
-                if(f['outputs'][0]['type'].indexOf('uint')!=-1){
-                  try{throw method}
-                  catch(method){
-                    method.callback=function(error,result){
-                      if(!error){//console.log('method result2 ',method.name,result);
-                       method.callback2(web3.toDecimal(result));}else{console.log('transaction failed with ',error.message)}
-                    }
-                  }
-                  //console.log('testing callback function ')
-                  try{
-                    method.callback()
-                  }
-                  catch(err){
-                    console.log('error',err)
-                  }
-                    //callback='web3.toDecimal(result)'
-                }
-                if (f['outputs'][0]['type'].indexOf('string')!=-1){
-                  try{throw method}
-                  catch(method){
-                  method.callback=function(error,result){
-                    if(!error){//console.log('method result3 ',method.name,result);
-                     method.callback2(web3.toAscii(result));}else{console.log('transaction failed with ',error.message)}}
-                  }
-                    //callback='web3.toAscii(result)'
-                }
-                if (f['outputs'][0]['type'].indexOf('bool')!=-1){
-                  try{throw method}
-                  catch(method){
-                  method.callback=function(error,result){
-                    if(!error){//console.log('method result4 ',method.name,result);
-                     method.callback2(result.indexOf('1')!=-1);}else{console.log('transaction failed with ',error.message)}
-                  }
-                }
+                // if(f['outputs'][0]['type'].indexOf('uint')!=-1){
+                //   try{throw method}
+                //   catch(method){
+                //     method.callback=function(error,result){
+                //       if(!error){//console.log('method result2 ',method.name,result);
+                //        method.callback2(web3.toDecimal(result));}else{console.log('transaction failed with ',error.message)}
+                //     }
+                //   }
+                //   //console.log('testing callback function ')
+                //   // try{
+                //   //   method.callback()
+                //   // }
+                //   // catch(err){
+                //   //   console.log('error',err)
+                //   // }
+                //     //callback='web3.toDecimal(result)'
+                // }
+                // if (f['outputs'][0]['type'].indexOf('string')!=-1){
+                //   try{throw method}
+                //   catch(method){
+                //   method.callback=function(error,result){
+                //     if(!error){//console.log('method result3 ',method.name,result);
+                //      method.callback2(web3.toAscii(result));}else{console.log('transaction failed with ',error.message)}}
+                //   }
+                //     //callback='web3.toAscii(result)'
+                // }
+                // if (f['outputs'][0]['type'].indexOf('bool')!=-1){
+                //   try{throw method}
+                //   catch(method){
+                //   method.callback=function(error,result){
+                //     if(!error){//console.log('method result4 ',method.name,result);
+                //      method.callback2(result.indexOf('1')!=-1);}else{console.log('transaction failed with ',error.message)}
+                //   }
+                // }
+
                     //result.indexOf('1')!=-1
-                }
+                //}
             }
             //value=''
-            console.log('checking function ',f)
+            //console.log('checking function ',f)
             if (f['payable']==null){
                 continue
             }
-            console.log('payable is: ',f['payable'])
+            //console.log('payable is: ',f['payable'])
             if (f['payable']){
                 method.payable=f['payable']
                 //value=',value: eth'
@@ -616,5 +715,48 @@ interpreter={
     if((typeof dappInterface.elementsById)!='object'){
       throw 'elementsById in interfaceDefinition.js must be of type "object"'
     }
+  },
+  recursiveValueReplace:function(obj,str,replace){
+    for(var f in obj){
+      if((typeof obj[f])=='string'){
+        obj[f]=interpreter.replaceAll(obj[f],str,replace)
+      }
+      if((typeof obj[f])=='object'){
+        recursiveValueReplace(obj[f],str,replace)
+      }
+    }
+  },
+  expandMacros:function(){
+    if(dappInterface.macros){
+      for(var k in dappInterface.macros){
+        //console.log('macros test',k)
+
+        for(var f in interpreter.getKeys(dappInterface.elementsById)){
+          if(f.indexOf(k)!=-1){
+            var elementwas=dappInterface.elementsById[f]
+            delete dappInterface.elementsById[f]
+            //interpreter.recursiveValueReplace(elementwas,k,"TEMPTEST")
+            //console.log('elementwas ',elementwas)
+
+            for(var i=0;i<dappInterface.macros[k].length;i++){
+              var elementCopy=JSON.parse(JSON.stringify(elementwas))
+              var replacement=dappInterface.macros[k][i]
+              interpreter.recursiveValueReplace(elementCopy,k,replacement)
+              var f2=interpreter.replaceAll(f,k,replacement)
+              dappInterface.elementsById[f2]=elementCopy
+            }
+            //console.log('whatremains ',dappInterface.elementsById)
+          }
+          //console.log('macros test ',f)
+        }
+      }
+    }
   }
 }
+// var logcount=0
+// function logst(tolog){//sometimes
+//   logcount+=1
+//   if(logcount%100==0){
+//     console.log(tolog);
+//   }
+// }
