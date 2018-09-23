@@ -203,7 +203,12 @@ interpreter={
         throw "parameter undefined "+boundvariables;
       }
       if(interpreter.utilityFunctions.isValidFunctionName(f) && boundVariables[f].toString().indexOf('\n')==-1){
-        eval('var '+f+'="'+boundVariables[f]+'"')//set all these variables to the local function variable space
+        try{
+          eval('var '+f+'="'+boundVariables[f]+'"')//set all these variables to the local function variable space
+        }
+        catch(err){
+          throw 'could not eval variable '+f+' '+'var '+f+'="'+boundVariables[f]+'"\n'+err
+        }
       }
     }
     var command
@@ -227,7 +232,7 @@ interpreter={
     }
     catch(err){
       console.log('dappInterpreter.js command \n"'+initialCommand+'""\n failed with exception: ',err)
-      throw 'couldnt eval command'
+      //throw 'couldnt eval command'
     }
     //console.log('command result ',command,result)
     return result
@@ -286,7 +291,9 @@ interpreter={
       if(refcode.toLowerCase()==web3.eth.accounts[0]){//don't allow self refers from the frontend
         refcode=0
       }
-      refcode=refcode.toLowerCase()
+      else{
+        refcode=refcode.toLowerCase()
+      }
     }
     else{refcode=0}
     boundVariables['referralAddress']=refcode
@@ -331,7 +338,12 @@ interpreter={
       }
       //console.log('executecall boundvar',boundVariables[f],f,interpreter.utilityFunctions.isValidFunctionName(f))
       if(interpreter.utilityFunctions.isValidFunctionName(f) && boundVariables[f].toString().indexOf('\n')==-1){
-        eval('var '+f+'="'+boundVariables[f]+'"')//set all these variables to the local function variable space
+        try{
+          eval('var '+f+'="'+boundVariables[f]+'"')//set all these variables to the local function variable space
+        }
+        catch(err){
+          throw 'could not eval variable '+f+' '+'var '+f+'="'+boundVariables[f]+'"\n'+err
+        }
       }
     }
     var weiToDisplay=interpreter.utilityFunctions.weiToDisplay
@@ -347,7 +359,12 @@ interpreter={
     }
     var params=[]
     for(var i=0;i<strparams.length;i++){
-      params.push(eval(strparams[i]))
+      try{
+        params.push(eval(strparams[i]))
+      }
+      catch(err){
+        throw 'could not eval '+strparams[i]+'\n'+err
+      }
     }
 
     //interpreter.sendTransactionWithCallback(params,method,c,paramstr,callsObj)
@@ -404,7 +421,7 @@ interpreter={
   'parseResultByType':function(result,type){
     //console.log('parseresultbytype ',result,type)
     if(type.indexOf('none')!=-1){
-      return result
+      return '"'+result+'"'
     }
     if(type.indexOf('uint')!=-1){
       return web3.toDecimal(result)
@@ -413,7 +430,12 @@ interpreter={
       return result.indexOf('1')!=-1
     }
     if(type.indexOf('string')!=-1){
-      web3.toAscii(result)
+      return '"'+web3.toAscii(result)+'"'
+    }
+    if(type.indexOf('address')!=-1){
+      //0x000000000000000000000000aebbd80fd7dae979d965a3a5b09bbcd23eb40e5f
+      //console.log('address printing ',result.substring(26))
+      return '"0x'+result.substring(26)+'"'
     }
     return result
   },
