@@ -10,6 +10,8 @@
   my napkins: <div id="myNapkinsDiv">?</div>
   <button id="getFreeNapkinsButton" role="button">Get Free Napkins</button>
   <br>
+  Napkin Countdown: <span id="napkinCountdownSpan"></span>
+  <br>
   Buy napkins:
   spend: <input id="napkinsToBuyInput" step="1" type="number" value="10"> Eth
   <button id="buyNapkinsButton" role="button">Buy Napkins</button>
@@ -23,7 +25,27 @@
   address:
   <input id="addressToMoveInput" step="1" type="text">
   <button id="moveNapkinsButton" role="button">Send napkins</button>
-
+  <br><br>
+  Potato 1 owned by
+  <span id="potatoOwnerSpan0"></span> you can buy it for
+  <span id="potatoPriceSpan0"></span> Eth: <button id="buyPotatoButton0">Buy Potato</button>
+  <br>
+  Potato 2 owned by
+  <span id="potatoOwnerSpan1"></span> you can buy it for
+  <span id="potatoPriceSpan1"></span> Eth: <button id="buyPotatoButton1">Buy Potato</button>
+  <br>
+  Potato 3 owned by
+  <span id="potatoOwnerSpan2"></span> you can buy it for
+  <span id="potatoPriceSpan2"></span> Eth: <button id="buyPotatoButton2">Buy Potato</button>
+  <br>
+  Potato 4 owned by
+  <span id="potatoOwnerSpan3"></span> you can buy it for
+  <span id="potatoPriceSpan3"></span> Eth: <button id="buyPotatoButton3">Buy Potato</button>
+  <br>
+  <br><br>
+  <a id="contractLink">Contract: <span id="contractBalanceSpan"></span> </a>
+  <br>
+  ref link: <a id="refLink"></a>
   <script>
     interpreter.main()
   </script>

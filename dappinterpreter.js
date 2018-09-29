@@ -57,7 +57,7 @@ interpreter={
             }
 
           if(netId!=networkshouldbe){
-              alert("Please switch to appropriate network "+dappInterface.network)
+              alert("Please switch to appropriate network: "+dappInterface.network)
               //interpreter.disableButtons()
           }
           else{
@@ -67,20 +67,6 @@ interpreter={
       else{
         networkshouldbe=1
       }
-        /*
-      switch (netId) {
-        case "1":
-          console.log('This is mainnet')
-          break
-        case "2":
-          console.log('This is the deprecated Morden test network.')
-          break
-        case "3":
-          console.log('This is the ropsten test network.')
-          break
-        default:
-          console.log('This is an unknown network.')
-      }*/
     })
   },
   'refreshData':function(){
@@ -91,10 +77,7 @@ interpreter={
   },
   'sendTransaction':function(params,method,callback2){
     //console.log('sending transaction ',params,method.name)
-    //console.log('methodorig: ',method0)
-    //var method=JSON.parse(JSON.stringify(method0))
-    //method.callback=method0.callback
-    //console.log('methodcopy: ',method,method0)
+
     var contractAbi = web3.eth.contract(method.abi);
     var myContract = contractAbi.at(method.contractAddress);
     var tparams={}
@@ -110,10 +93,7 @@ interpreter={
     }
     //console.log('sending transaction with parameters ',method.name,method.transact,params)
     var outputData = myContract[method.name].getData(... params);
-    //method.callback2=callback2
-    //console.log('sendtransaction methodis',method)
     tparams=Object.assign({to:method.contractAddress, from:null, data: outputData},tparams)
-    //console.log('tparams ',tparams)
     //console.log('sending transaction with parameters ',tparams)
     var endstr=web3.eth[method.transact](tparams,callback2)//method.callback2);//method.callback);
   },
@@ -196,6 +176,8 @@ interpreter={
     var getQueryVariable=interpreter.utilityFunctions.getQueryVariable
     var ethToWei=interpreter.utilityFunctions.ethToWei
     var weiToEth=interpreter.utilityFunctions.weiToEth
+    var secondsToString=interpreter.utilityFunctions.secondsToString
+    var toDecimal=web3.toDecimal
 
     var boundVariables=interpreter.getBoundVariables()
     for(var f in interpreter.getKeys(boundVariables)){
@@ -207,11 +189,11 @@ interpreter={
           eval('var '+f+'="'+boundVariables[f]+'"')//set all these variables to the local function variable space
         }
         catch(err){
-          throw 'could not eval variable '+f+' '+'var '+f+'="'+boundVariables[f]+'"\n'+err
+          throw 'could not eval1 variable '+f+' '+'var '+f+'="'+boundVariables[f]+'"\n'+err
         }
       }
     }
-    var command
+    //var command
     for(var c in interpreter.getKeys(interpreter.displayCalls)){
       var method=interpreter.solmethods[c]
       //console.log('applying call0',c)
@@ -231,7 +213,7 @@ interpreter={
       result=eval(command)
     }
     catch(err){
-      console.log('dappInterpreter.js command \n"'+initialCommand+'""\n failed with exception: ',err)
+      console.log('dappInterpreter.js command \n"'+initialCommand+'" ('+command+')\n failed with exception: ',err)
       //throw 'couldnt eval command'
     }
     //console.log('command result ',command,result)
@@ -329,6 +311,7 @@ interpreter={
   },
   //c is the name of the function being called
   'executeCall':function(callsObj,paramstr,c){
+    //console.log('executecall ',c,paramstr)
     var method=interpreter.solmethods[c]
     var boundVariables=interpreter.getBoundVariables()
     //console.log('boundvariables are',boundVariables)
@@ -342,7 +325,7 @@ interpreter={
           eval('var '+f+'="'+boundVariables[f]+'"')//set all these variables to the local function variable space
         }
         catch(err){
-          throw 'could not eval variable '+f+' '+'var '+f+'="'+boundVariables[f]+'"\n'+err
+          throw 'could not eval2 variable '+f+' '+'var '+f+'="'+boundVariables[f]+'"\n'+err
         }
       }
     }
@@ -350,6 +333,8 @@ interpreter={
     var getQueryVariable=interpreter.utilityFunctions.getQueryVariable
     var ethToWei=interpreter.utilityFunctions.ethToWei
     var weiToEth=interpreter.utilityFunctions.weiToEth
+    var secondsToString=interpreter.utilityFunctions.secondsToString
+    var toDecimal=web3.toDecimal
     var strparams
     if(paramstr.length>0){
       var strparams=paramstr.split(',')
@@ -360,10 +345,10 @@ interpreter={
     var params=[]
     for(var i=0;i<strparams.length;i++){
       try{
-        params.push(eval(strparams[i]))
+        params.push(interpreter.getCommandResult(strparams[i]))//eval(strparams[i]))
       }
       catch(err){
-        throw 'could not eval '+strparams[i]+'\n'+err
+        throw 'could not eval3 '+strparams[i]+'\n'+err
       }
     }
 
@@ -380,43 +365,6 @@ interpreter={
       }else{console.log('transaction '+method.name+' failed with ',error.message)}
 
     })
-
-    // var args0=[]
-    // args0.push(params)
-    // args0.push(method)
-    // args0.push(c)
-    // args0.push(paramstr)
-    // args0.push(callsObj)
-    // //[params,method,c,paramstr,callsObj]
-    // console.log('sending transaction in a bit ',args0)
-    // try{throw args0}
-    // catch(args){
-    //   //console.log('sending transaction for ')
-    //   interpreter.sendTransaction(args[0],args[1],function(result){
-    //     console.log('doing callback2 ',result,args)
-    //     args[4][args[2]][args[3]]=result
-    //     // interpreter.sendTransaction(params,method,function(result){
-    //     //   //console.log('doing callback2 ',result,method)
-    //     //   callsObj[c][paramstr]=result
-    //   })
-    // }
-
-    //console.log('paramstr',params,strparams,method)
-    // interpreter.sendTransaction(params,method,function(result){
-    //   //console.log('doing callback2 ',result,method)
-    //   callsObj[c][paramstr]=result
-    //})
-
-    //console.log('paramstr',params,strparams,method)
-    // (function(paramstr){
-    //   console.log('sendTransactionWithCallbackz',params,c,paramstr,callsObj)
-    //   interpreter.sendTransaction(params,method,function(result){
-    //     //console.log('doing callback2 ',result,method)
-    //     console.log('recieveTransactionWithCallback',params,c,paramstr,callsObj)
-    //     callsObj[c][paramstr]=result
-    //   })
-    //   setTimeout(console.log('amicrazy',paramstr),1)
-    // })(paramstr)
   },
   'parseResultByType':function(result,type){
     //console.log('parseresultbytype ',result,type)
@@ -424,7 +372,7 @@ interpreter={
       return '"'+result+'"'
     }
     if(type.indexOf('uint')!=-1){
-      return web3.toDecimal(result)
+      return '"'+result+'"'
     }
     if(type.indexOf('bool')!=-1){
       return result.indexOf('1')!=-1
@@ -439,18 +387,6 @@ interpreter={
     }
     return result
   },
-  'sendTransactionWithCallback':function(params,method,c,paramstr,callsObj){
-    //setTimeout(console.log('amicrazy',paramstr),1000)
-    var timecalled=Date.now()
-    console.log('sendTransactionWithCallback',params,c,paramstr,callsObj,timecalled)
-    interpreter.sendTransaction(params,method,function(result){
-      //console.log('doing callback2 ',result,method)
-      setTimeout(function(){//}(callsObj,c,paramstr,result,timecalled){
-        console.log('recieveTransactionWithCallback',params,c,paramstr,callsObj,timecalled)
-        callsObj[c][paramstr]=result
-      },1)//(callsObj,c,paramstr,result,timecalled)
-    })
-  },
   'displayCalls':{},
   'actionCalls':{},
   //'disableCalls':{},
@@ -460,15 +396,16 @@ interpreter={
     //console.log('fwerw???',dappInterface)
     for(var f in interpreter.getKeys(dappInterface.elementsById)){
       if(!document.getElementById(f)){
+        console.log('error: ',('Could not find element id '+f))
         throw 'Could not find element id '+f
       }
       //console.log('ireojoijoi??',f,dappInterface.elementsById[f])
       if('display' in dappInterface.elementsById[f]){
-        interpreter.defineCallsInCommand(dappInterface.elementsById[f].display,interpreter.displayCalls)
+        interpreter.defineCallsInCommand(dappInterface.elementsById[f].display)
       }
       if(dappInterface.elementsById[f].action){
         console.log('foundaction',dappInterface.elementsById[f].action)
-        var lastCombo = interpreter.defineCallsInCommand(dappInterface.elementsById[f].action,interpreter.actionCalls)
+        var lastCombo = interpreter.defineCallsInCommand(dappInterface.elementsById[f].action)
         console.log('setting onclick',f)
         console.log('???',document.getElementById(f))
         lastCombo.push(f)
@@ -482,18 +419,18 @@ interpreter={
         }
       }
       if(dappInterface.elementsById[f].disable){
-        interpreter.defineCallsInCommand(dappInterface.elementsById[f].disable,interpreter.displayCalls)
+        interpreter.defineCallsInCommand(dappInterface.elementsById[f].disable)
       }
       if(dappInterface.elementsById[f].attributes){
         for(attr in dappInterface.elementsById[f].attributes){
-          interpreter.defineCallsInCommand(dappInterface.elementsById[f].attributes[attr],interpreter.displayCalls)
+          interpreter.defineCallsInCommand(dappInterface.elementsById[f].attributes[attr])
         }
       }
     }
     //console.log('defined calls ',interpreter.displayCalls)
   },
-  'defineCallsInCommand':function(command,calls){
-    //console.log('definecallsincommand ',command,calls)
+  'defineCallsInCommand':function(command){//},calls){
+    console.log('definecallsincommand ',command)//,calls)
     var lastCombo=[]
     var solmethodkeys=[]
     for(var k in interpreter.getKeys(interpreter.solmethods)) solmethodkeys.push(k);
@@ -502,16 +439,21 @@ interpreter={
     });
     for(var i=0;i<solmethodkeys.length;i++){
       var s=solmethodkeys[i]
+      var calls=interpreter.actionCalls
+      if(interpreter.solmethods[s].transact=='call'){
+        calls=interpreter.displayCalls
+      }
     //for(var s in interpreter.getKeys(interpreter.solmethods)){
-      if(command.indexOf(s+'(')!=-1){
+      while(command.indexOf(s+'(')!=-1){
         var thatpart=command.substr(command.indexOf(s+'('))
+        command=command.substr(command.indexOf(s+'(')+1)
         var inside=interpreter.getInsideParens(thatpart)
         if(!(s in calls)){
           calls[s]={}
         }
         calls[s][inside]=null
         lastCombo=[s,inside]
-        //console.log('insideparenscheck ',thatpart+'|'+s+'|'+inside+'|||',typeof inside,calls[s])
+        console.log('insideparenscheck ',thatpart+'|'+s+'|'+inside+'|||',typeof inside,calls[s])
       }
       //console.log('jiojoeiwjoi',s)
     }
@@ -536,6 +478,23 @@ interpreter={
       }
   },
   'utilityFunctions':{
+    'secondsToString':function(seconds)
+    {
+        seconds=Math.max(seconds,0)
+        var numdays = Math.floor(seconds / 86400);
+
+        var numhours = Math.floor((seconds % 86400) / 3600);
+
+        var numminutes = Math.floor(((seconds % 86400) % 3600) / 60);
+
+        var numseconds = ((seconds % 86400) % 3600) % 60;
+        var endstr=""
+        //if(numdays>0){
+        //    endstr+=numdays + " days "
+        //}
+
+        return numhours + "h " + numminutes + "m "+numseconds+"s";
+    },
     'isValidFunctionName' : function(s) {
       var validName = /^[$A-Z_][0-9A-Z_$]*$/i;
       var reserved = {
@@ -582,7 +541,7 @@ interpreter={
     },
  'getCookie':function(name) {
       var nameEQ = name + "=";
-      var ca = document.cookie.split(';');
+      var ca = document.cookie.split(';');https://surge.sh/
       for(var i=0;i < ca.length;i++) {
           var c = ca[i];
           while (c.charAt(0)==' ') c = c.substring(1,c.length);
@@ -602,6 +561,7 @@ interpreter={
       }
       if(clist[i]==')'){
         if(rightcount==0){
+          console.log('getinsideparens result ',astr,astr.substr(0,i))
           return astr.substr(0,i)
         }
         else{
@@ -636,54 +596,9 @@ interpreter={
             if (f['inputs']){
                 method.numparams=f['inputs'].length
             }
-            // try{throw method}//this is to workaround method getting replaced within the function because javascript scoping is horrible
-            // catch(method){
-            //   method.callback=function(error,result){
-            //     if(!error){//console.log('method result1 ',method.name,result);
-            //      method.callback2(result);}else{console.log('transaction failed with ',error.message)}
-            //   }
-            // }
             method.resultType='none'
             if (f['outputs']!=null && f['outputs'].length>0){
               method.resultType=f['outputs'][0]['type']
-                //console.log('outputs: ',f['outputs'])
-                // if(f['outputs'][0]['type'].indexOf('uint')!=-1){
-                //   try{throw method}
-                //   catch(method){
-                //     method.callback=function(error,result){
-                //       if(!error){//console.log('method result2 ',method.name,result);
-                //        method.callback2(web3.toDecimal(result));}else{console.log('transaction failed with ',error.message)}
-                //     }
-                //   }
-                //   //console.log('testing callback function ')
-                //   // try{
-                //   //   method.callback()
-                //   // }
-                //   // catch(err){
-                //   //   console.log('error',err)
-                //   // }
-                //     //callback='web3.toDecimal(result)'
-                // }
-                // if (f['outputs'][0]['type'].indexOf('string')!=-1){
-                //   try{throw method}
-                //   catch(method){
-                //   method.callback=function(error,result){
-                //     if(!error){//console.log('method result3 ',method.name,result);
-                //      method.callback2(web3.toAscii(result));}else{console.log('transaction failed with ',error.message)}}
-                //   }
-                //     //callback='web3.toAscii(result)'
-                // }
-                // if (f['outputs'][0]['type'].indexOf('bool')!=-1){
-                //   try{throw method}
-                //   catch(method){
-                //   method.callback=function(error,result){
-                //     if(!error){//console.log('method result4 ',method.name,result);
-                //      method.callback2(result.indexOf('1')!=-1);}else{console.log('transaction failed with ',error.message)}
-                //   }
-                // }
-
-                    //result.indexOf('1')!=-1
-                //}
             }
             //value=''
             //console.log('checking function ',f)
@@ -702,13 +617,6 @@ interpreter={
                 method.transact='sendTransaction'
                 //transact='sendTransaction'
             }
-            // ftext=ftext.replaceAll('%TRANSACT%',transact)
-            // ftext=ftext.replaceAll('%VALUE%',value)
-            // ftext=ftext.replaceAll('%CONVERSION%',callback)
-            // ftext=ftext.replaceAll('%PARAMS%',params)
-            // ftext=ftext.replaceAll('%PARAMS2%',params2)
-            // ftext=ftext.replaceAll('%NAME%',f['name'])
-            // functions+=ftext+'\n'
         }
     }
   }
@@ -775,10 +683,3 @@ interpreter={
     }
   }
 }
-// var logcount=0
-// function logst(tolog){//sometimes
-//   logcount+=1
-//   if(logcount%100==0){
-//     console.log(tolog);
-//   }
-// }
