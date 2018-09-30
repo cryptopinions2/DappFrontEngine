@@ -1,5 +1,5 @@
 /*
-  Edit this configuration file to connect your html to a smart contract! All application logic can be specified here.
+  Edit this configuration file (or interfaceDefinitionBlank to start from scratch) to connect your html to a smart contract! All application logic can be specified here.
 
   Reserved DAppFrontEngine scripting variables and functions (can be used in display,action,disable etc statements):
   userAddress: the current user's Ethereum address (wrapper for web3.eth.accounts[0])
@@ -15,6 +15,8 @@
   All element ids are also usable as scripting variables; the id of an input will represent the current value of that input.
 
   Solidity functions in the contract may be called directly as if they were not asynchronous. You can specify the value sent to a payable function by using the desired Wei value as the first parameter.
+
+  Solidity functions can only be used as parameters of other solidity functions if the outer function creates a transaction, and the inner one is a view function. If you need to use results from a view function as parameters to another view function, the current workaround is to save those results in an input element and then use the id of that element as the parameter.
 */
 
 var dappInterface={
@@ -88,7 +90,7 @@ var dappInterface={
        }
      },
      "tokenCount":{
-       "display":"weiToDisplay(vrfToken.balanceOf(userAddress))"
+       "display":"weiToDisplay(vrfToken.balanceOf(userAddress))"//gets information from a secondary contract, vrfToken, specified in the "otherContracts" section of this config file.
      }
   },
   "network":"Ropsten",//The network this contract is on. change to mainnet to connect to a contract on mainnet
