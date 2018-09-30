@@ -11,14 +11,12 @@ DappFrontEngine also has built-in functions to effortlessly plug in common featu
 1. Add dappinterpreter.js and interfaceDefinitionBlank.js to your project
 
 2. Add to your html header:
-
 ```
 <script src="interfaceDefinition.js"></script>
 <script src="dappinterpreter.js"></script>
 ```
 
 3. Add at the end of your html body:
-
 ```
 <script>
   interpreter.main()
