@@ -272,7 +272,14 @@ interpreter={
       }
     }
     else{
-      interpreter.utilityFunctions.setCookie('ref',refcode)
+      var re = /0x[0-9A-Fa-f]*$/gm;
+      //console.log('testing refcode ',refcode,re.test(refcode))
+      if(re.test(refcode)){
+        interpreter.utilityFunctions.setCookie('ref',refcode)
+      }
+      else{
+        refcode=0//failed the regex test for valid hexidecimal, removing in case it is malicious
+      }
     }
     //console.log('refcode variable ',(typeof refcode),refcode)
     if(refcode){
