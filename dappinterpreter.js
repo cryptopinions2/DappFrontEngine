@@ -8,24 +8,27 @@ https://github.com/cryptopinions2/DappFrontEngine
 interpreter={
   'main':function(){
     //console.log('test this ',interpreter)
-    interpreter.expandMacros()
-    interpreter.checkReservedWordsNotPresent()
-    interpreter.checkDefinitionForErrors()
-    try{
-      interpreter.parseAbi(dappInterface.abi,dappInterface.contract)
-      for(c in dappInterface.otherContracts){
-        console.log('recording other contract abi ',c)
-        interpreter.parseAbi(dappInterface.otherContracts[c].abi,dappInterface.otherContracts[c].contract,c)
+    var setup=function(){
+      interpreter.expandMacros()
+      interpreter.checkReservedWordsNotPresent()
+      interpreter.checkDefinitionForErrors()
+      try{
+        interpreter.parseAbi(dappInterface.abi,dappInterface.contract)
+        for(c in dappInterface.otherContracts){
+          console.log('recording other contract abi ',c)
+          interpreter.parseAbi(dappInterface.otherContracts[c].abi,dappInterface.otherContracts[c].contract,c)
+        }
       }
+      catch(err){
+        throw 'ABI parsing failed with: '+err+'\n\n check that ABIs in interfaceDefinition.js are correct'
+      }
+      interpreter.defineCalls()
+      setTimeout(function(){interpreter.retrieveCalls()},300)
+      //interpreter.retrieveCalls()
+      interpreter.controlLoop()
+      interpreter.controlLoopFast()
     }
-    catch(err){
-      throw 'ABI parsing failed with: '+err+'\n\n check that ABIs in interfaceDefinition.js are correct'
-    }
-    interpreter.defineCalls()
-    setTimeout(function(){interpreter.retrieveCalls()},300)
-    //interpreter.retrieveCalls()
-    interpreter.controlLoop()
-    interpreter.controlLoopFast()
+    interpreter.metamaskFix(setup)
   },
   'controlLoopFast':function(){
     interpreter.applyCalls()
@@ -391,7 +394,7 @@ interpreter={
       return result.indexOf('1')!=-1
     }
     if(type.indexOf('string')!=-1){
-      return '"'+web3.toAscii(result)+'"'
+      return '"'+result+'"'
     }
     if(type.indexOf('address')!=-1){
       //0x000000000000000000000000aebbd80fd7dae979d965a3a5b09bbcd23eb40e5f
@@ -696,5 +699,22 @@ interpreter={
         }
       }
     }
+  },
+  metamaskFix:function(donext){
+    (async () => {
+        if (window.ethereum) {
+            window.web3 = new Web3(ethereum);
+            try {
+                // Request account access if needed
+                await ethereum.enable();
+                // Acccounts now exposed
+                //web3.eth.sendTransaction({/* ... */});
+            } catch (error) {
+                // User denied account access...
+            }
+          }
+          donext()
+        })()
+
   }
 }
