@@ -6,7 +6,7 @@ No more need to bother with asynchronous functions and control loops! Simply spe
 
 DappFrontEngine also has built-in functions to effortlessly plug in common features like referral code handling, warning the user to use the correct network and be connected to Metamask etc, and links to your contract on Etherscan.
 
-##Usage:
+## Usage:
 
 1. Add dappinterpreter.js and interfaceDefinitionBlank.js to your project
 
@@ -31,4 +31,4 @@ DappFrontEngine also has built-in functions to effortlessly plug in common featu
    - Contract ABI
    - Your element ids, what to display in them and what actions they trigger
 
-##[Demo](http://dappfrontenginedemo.surge.sh/)
+## [Demo](http://dappfrontenginedemo.surge.sh/)
