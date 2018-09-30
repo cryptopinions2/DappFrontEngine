@@ -7,5 +7,8 @@ var dappInterface={
   },
   "network":"Ropsten",
   "contract":"",
-  "abi":[]
+  "abi":[],
+  "otherContracts":{
+    
+  }
 }

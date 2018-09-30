@@ -12,10 +12,14 @@ interpreter={
     interpreter.checkReservedWordsNotPresent()
     interpreter.checkDefinitionForErrors()
     try{
-      interpreter.parseAbi()
+      interpreter.parseAbi(dappInterface.abi,dappInterface.contract)
+      for(c in dappInterface.otherContracts){
+        console.log('recording other contract abi ',c)
+        interpreter.parseAbi(dappInterface.otherContracts[c].abi,dappInterface.otherContracts[c].contract,c)
+      }
     }
     catch(err){
-      throw 'ABI parsing failed with: '+err+'\n\n check that ABI in interfaceDefinition.js is correct'
+      throw 'ABI parsing failed with: '+err+'\n\n check that ABIs in interfaceDefinition.js are correct'
     }
     interpreter.defineCalls()
     setTimeout(function(){interpreter.retrieveCalls()},300)
@@ -91,8 +95,10 @@ interpreter={
         tparams.value=0
       }
     }
-    //console.log('sending transaction with parameters ',method.name,method.transact,params)
-    var outputData = myContract[method.name].getData(... params);
+    //console.log('sending transaction with parameters ',method.name,method.transact,params,myContract)
+    var functionName=method.name.split('.');
+    functionName=functionName[functionName.length-1]
+    var outputData = myContract[functionName].getData(... params);
     tparams=Object.assign({to:method.contractAddress, from:null, data: outputData},tparams)
     //console.log('sending transaction with parameters ',tparams)
     var endstr=web3.eth[method.transact](tparams,callback2)//method.callback2);//method.callback);
@@ -581,17 +587,19 @@ interpreter={
     return keys
   },
   'solmethods':{},
- 'parseAbi':function(){
-
-    for(f of dappInterface.abi){
+ 'parseAbi':function(abiDefinition,contractAddress,contractName){
+    for(f of abiDefinition){
         //console.log('processing part of data:',f)
         if(f['name']){
             var method={'numparams':0}
-            method.contractAddress=dappInterface.contract
-            method.abi=dappInterface.abi
+            method.contractAddress=contractAddress
+            method.abi=abiDefinition
             //console.log('what is interpreter ',interpreter)
-            interpreter.solmethods[f['name']]=method
             method.name=f['name']
+            if(contractName){
+              method.name=contractName+'.'+method.name
+            }
+            interpreter.solmethods[method.name]=method
             //console.log('testing iteration '+f['name'])
             if (f['inputs']){
                 method.numparams=f['inputs'].length
