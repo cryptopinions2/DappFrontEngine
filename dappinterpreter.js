@@ -136,6 +136,14 @@ interpreter={
         //console.log('disablecheck: ',f,element,command,result,element.disabled)
         interpreter.setElementDisabled(element,result)
       }
+
+      command=dappInterface.elementsById[f].hide
+      if(command){
+        var result=interpreter.getCommandResult(command)
+        var element=document.getElementById(f)
+        interpreter.setElementHidden(element,result)
+      }
+
       if(dappInterface.elementsById[f].attributes){
         for(attr in dappInterface.elementsById[f].attributes){
           //console.log('attribute check: ',attr)
@@ -151,6 +159,25 @@ interpreter={
           }
         }
       }
+    }
+  },
+  'defaultDisplayStyles':{},
+  'setElementHidden':function(element,hidden){
+    var currentDisplay=element.style.display
+    if(!(element.id in interpreter.defaultDisplayStyles)){
+      if(currentDisplay=='none'){
+        currentDisplay='inline-block'
+      }
+      interpreter.defaultDisplayStyles[element.id]=currentDisplay
+    }
+    //console.log('setting hidden ',element.id,currentDisplay,hidden)
+    if(hidden){
+      if(element.style.display!='none')
+        element.style.display='none'
+    }
+    else{
+      if(element.style.display!=interpreter.defaultDisplayStyles[element.id])
+        element.style.display=interpreter.defaultDisplayStyles[element.id]
     }
   },
   'setElementDisabled':function(element,disabled){
@@ -436,6 +463,9 @@ interpreter={
       }
       if(dappInterface.elementsById[f].disable){
         interpreter.defineCallsInCommand(dappInterface.elementsById[f].disable)
+      }
+      if(dappInterface.elementsById[f].hide){
+        interpreter.defineCallsInCommand(dappInterface.elementsById[f].hide)
       }
       if(dappInterface.elementsById[f].attributes){
         for(attr in dappInterface.elementsById[f].attributes){

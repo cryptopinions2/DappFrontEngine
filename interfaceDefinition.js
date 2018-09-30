@@ -36,6 +36,8 @@ var dappInterface={
 
     disable: if the element is a button or a element, makes it unclickable if the expression evaluates to true. Useful for preventing transaction errors in situations where a transaction cannot be sent.
 
+    hide: sets the element style to 'display:none', hiding it, if the expression evaluates to true
+
     action: changes the onclick function of the element to run the expression (can use this to send smart contract transactions).
   */
   "elementsById":{
@@ -62,6 +64,9 @@ var dappInterface={
      },
      "contractBalanceSpan":{
        "display":"weiToDisplay(balance())"//sets contractBalanceSpan element text content to a human readable (dynamically truncated) formatted Eth string.
+     },
+     "sellNapkinsDiv":{
+       "hide":"toDecimal(napkinCount(userAddress))==0"//hides the entire sell section if user has no napkins
      },
      "sellNapkinsButton":{
        "action":"sellNapkins(napkinsToSellInput)",//when this button is pressed, a transaction calling the contract function 'sellNapkins' is called, using the value in the field 'napkinsToSellInput' as a parameter.
